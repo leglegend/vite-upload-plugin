@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "moduleResolution": "node",
+    "module": "ES6",
+    "lib": ["ES2016"],
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "declaration": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "noImplicitAny": true,
+    "target": "es6",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "sourceMap": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

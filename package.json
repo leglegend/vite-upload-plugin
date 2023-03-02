@@ -1,0 +1,41 @@
+{
+  "name": "@q/vite-upload-plugin",
+  "maintainers": [
+    {
+      "name": "z-nite",
+      "email": "z-nite@sharingmail.cn"
+    }
+  ],
+  "version": "0.0.18",
+  "description": "自动上传静态资源到CDN，并替换引用资源地址",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "require": "./dist/index.js",
+    "import": "./dist/index.mjs"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "cdn",
+    "upload"
+  ],
+  "files": [
+    "dist"
+  ],
+  "author": "z-nite",
+  "license": "ISC",
+  "dependencies": {
+    "@q/qcdn": "^3.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.1",
+    "tsup": "^6.6.3",
+    "typescript": "^4.9.5",
+    "vite": "^4.1.4"
+  }
+}
