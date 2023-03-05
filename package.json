@@ -1,7 +1,7 @@
 {
   "name": "vite-upload-plugin",
   "author": "leglegend",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "自动上传静态资源到CDN，并替换引用资源地址",
   "repository": {
     "type": "git",
