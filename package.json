@@ -1,13 +1,12 @@
 {
-  "name": "@q/vite-upload-plugin",
-  "maintainers": [
-    {
-      "name": "z-nite",
-      "email": "z-nite@sharingmail.cn"
-    }
-  ],
+  "name": "vite-upload-plugin",
+  "author": "leglegend",
   "version": "0.0.18",
   "description": "自动上传静态资源到CDN，并替换引用资源地址",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/leglegend/vite-upload-plugin"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -27,11 +26,7 @@
   "files": [
     "dist"
   ],
-  "author": "z-nite",
   "license": "ISC",
-  "dependencies": {
-    "@q/qcdn": "^3.1.7"
-  },
   "devDependencies": {
     "@types/node": "^18.14.1",
     "tsup": "^6.6.3",

@@ -1,14 +1,12 @@
 export type CustomSetting = {
-  /** 是否使用https */
-  https?: boolean
-
-  /** 图片上传cdn域名 */
-  image?: {
-    domains: string[]
-  }
-
-  /** 静态资源上传cdn域名 */
-  static?: {
-    domains: string[]
-  }
+  // 上传文件
+  upload: (path: string) => Promise<string>
 }
+
+export type FileDetail = {
+  fileName: string
+  fullPath: string
+  prefix?: string
+}
+
+export type Job = { fileName: string; cb: () => Promise<void> }

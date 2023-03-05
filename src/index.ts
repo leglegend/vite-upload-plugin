@@ -1,15 +1,8 @@
 // vite 静态资源上传cdn plugin
 import { UserConfig } from 'vite'
-import { CustomSetting } from './types'
-import { uploadFile, initOption } from './qupload'
+import { CustomSetting, FileDetail, Job } from './types'
 import path from 'path'
 import fs from 'fs'
-
-type FileDetail = {
-  fileName: string
-  fullPath: string
-  prefix?: string
-}
 
 // 去掉js文件中的公共路径
 function removePublicPath(publicPath: string, assetStringValue: string) {
@@ -43,7 +36,7 @@ function deepReaddir(dir: string, prefix?: string): FileDetail[] {
  * @param text 被替换的字符串
  * @param checker  替换前的内容
  * @param replacer 替换后的内容
- * @returns {String} 替换后的字符串
+ * @returns {string} 替换后的字符串
  */
 function replaceAll(text: string, checker: string, replacer: string): string {
   let lastText = text
@@ -54,11 +47,59 @@ function replaceAll(text: string, checker: string, replacer: string): string {
   return text
 }
 
+// 使用 Promise.resolve()创建一个Promise实例，可将一个任务添加到微任务队列
+const p = Promise.resolve()
+// 是否锁定微任务队列
+let lock = false
+
+let queue: Job[] = []
+
+function queueJob(job: Job) {
+  queue.push(job)
+
+  if (lock) return
+
+  lock = true
+
+  p.then(async () => {
+    // 本轮微任务需要执行的任务列表
+    const currentJobs: Job[] = []
+    // 本轮微任务不执行，需要放进下轮微任务执行的任务列表
+    const newQueue = []
+
+    while (queue.length) {
+      // 逐个取出队列中的任务
+      const current = queue.shift()!
+      // 当前任务已存在于本轮执行列表，则放入下一轮执行
+      if (currentJobs.find((j) => j.fileName === current.fileName)) {
+        newQueue.push(current)
+      } else {
+        currentJobs.push(current)
+      }
+    }
+
+    // 执行本轮任务
+    await Promise.all(currentJobs.map((j) => j.cb()))
+
+    // 本轮任务执行完成后，解锁微任务队列
+    lock = false
+
+    // 将本轮未执行的任务推进任务队列
+    newQueue.forEach((job) => {
+      queueJob(job!)
+    })
+
+    // 如果任务队列中有任务，但是下一轮任务队列中无任务，重新触发任务队列
+    if (!newQueue.length && queue.length) queueJob(queue.pop()!)
+  })
+}
+
 let base = '/'
 let outputDir = 'dist'
 
 const viteUploadPlugin = (option: CustomSetting) => ({
   name: 'vite-upload-plugin',
+
   config: (config: UserConfig) => {
     // 记录传进来的公共路径
     base = config.base || '/'
@@ -67,7 +108,6 @@ const viteUploadPlugin = (option: CustomSetting) => ({
 
     if (config.build?.outDir) outputDir = config.build?.outDir
 
-    initOption(option)
     return {
       base
     }
@@ -86,10 +126,16 @@ const viteUploadPlugin = (option: CustomSetting) => ({
     const uploadedFiles: string[] = []
 
     // 保存已上传CDN文件的路径，防止同一个文件多次上传
-    const already = new Map()
+    const already = new Map<string, string>()
 
     // 深度遍历需要替换资源的文件
-    async function dfs(current: FileDetail, exists = new Map()) {
+    async function dfs(
+      current: FileDetail,
+      exists = new Map()
+    ): Promise<string> {
+      // 已上传的文件，直接返回
+      if (already.get(current.fileName)) return already.get(current.fileName)!
+
       // 已存在引用过的文件，存在循环引用
       if (exists.get(current.fileName)) {
         for (const key of exists.keys()) {
@@ -113,9 +159,10 @@ const viteUploadPlugin = (option: CustomSetting) => ({
           )
         }
 
-        // 是否需要重写内容，如果文件引用了其他文件，则需要修改文件内的引用地址
-        let needReplace = false
+        // 当前文件引用的文件列表
+        const linkFiles: FileDetail[] = []
 
+        // 检测当前文件引用了哪些文件
         for (let file of fileList) {
           // 过滤当前文件
           if (current.fileName === file.fileName) continue
@@ -125,12 +172,19 @@ const viteUploadPlugin = (option: CustomSetting) => ({
 
           // 当文件内容包含其他文件名称时
           if (assetStringValue?.includes(file.fileName)) {
-            // 文件内容中包含别的文件，所以之后需要重写文件内容
-            needReplace = true
+            linkFiles.push(file)
+          }
+        }
 
-            // 通过深度遍历查询被引用的文件是否还引用了其他文件
-            const newPath =
-              already.get(file.fileName) || (await dfs(file, exists))
+        if (linkFiles.length) {
+          // 等待引用的文件全部上传完毕后再进行替换操作
+          await Promise.all(linkFiles.map((file) => dfs(file, new Map(exists))))
+
+          for (let file of linkFiles) {
+            // 获取引用文件的cdn路径
+            const newPath = already.get(file.fileName)
+
+            if (!newPath) continue
 
             // 所有类型文件都存在公共路径+文件路径引用的方式
             assetStringValue = replaceAll(
@@ -154,10 +208,8 @@ const viteUploadPlugin = (option: CustomSetting) => ({
               )
             }
           }
-        }
 
-        // 将文件资源替换成修改后的
-        if (needReplace) {
+          // 将文件资源替换成修改后的
           fs.writeFileSync(current.fullPath, assetStringValue)
         }
       }
@@ -166,10 +218,24 @@ const viteUploadPlugin = (option: CustomSetting) => ({
       if (/\.html$/.test(current.fileName)) return current.fileName
 
       // 在这里进行上传操作，并获取到上传后的新路径
-      const newKey = await uploadFile(current.fullPath)
+      const newKey: string = await new Promise((resolve) => {
+        // 将上传任务推进一个队列中，当该任务被执行时，cb函数会被调用
+        queueJob({
+          fileName: current.fileName,
+          cb: async () => {
+            if (already.get(current.fileName)) {
+              resolve(already.get(current.fileName)!)
+            } else {
+              console.log('开始上传' + current.fileName)
+              resolve(await option.upload(current.fullPath))
+              console.log('上传结束' + current.fileName)
 
-      // 上传完成后保存源文件路径，打包结束后删除
-      uploadedFiles.push(current.fullPath)
+              // 上传完成后保存源文件路径，打包结束后删除
+              uploadedFiles.push(current.fullPath)
+            }
+          }
+        })
+      })
 
       // 并将新路径放进Map中
       already.set(current.fileName, newKey)
@@ -181,9 +247,8 @@ const viteUploadPlugin = (option: CustomSetting) => ({
       return newKey
     }
 
-    for (const file of enters) {
-      await dfs(file, new Map())
-    }
+    // 对所有入口进行深度查询
+    await Promise.all(enters.map((file) => dfs(file, new Map())))
 
     // 删除已上传的文件
     uploadedFiles.forEach((path) => fs.unlinkSync(path))
