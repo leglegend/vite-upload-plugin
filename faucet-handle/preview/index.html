@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新玛钢水龙头抽屉把手</title>
+  <style>
+    :root {
+      --bg: #1a1612;
+      --panel: rgba(28, 24, 20, 0.86);
+      --ink: #f4ead8;
+      --muted: #c4b49a;
+      --accent: #c9a227;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+      font-family: "Songti SC", "Noto Serif SC", "Source Han Serif SC", "Times New Roman", serif; }
+    canvas { display: block; }
+    #ui {
+      position: absolute; left: 20px; top: 20px; width: min(360px, calc(100vw - 40px));
+      background: var(--panel); border: 1px solid rgba(201, 162, 39, 0.35);
+      padding: 20px 22px; backdrop-filter: blur(8px);
+    }
+    h1 { font-size: 22px; margin: 0 0 6px; font-weight: 600; letter-spacing: 0.08em; }
+    .sub { color: var(--muted); font-size: 13px; line-height: 1.55; margin-bottom: 14px; }
+    dl { display: grid; grid-template-columns: 88px 1fr; gap: 6px 10px; margin: 0 0 16px; font-size: 13px; }
+    dt { color: var(--accent); }
+    dd { margin: 0; }
+    .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, a.btn {
+      appearance: none; border: 1px solid var(--accent); background: transparent;
+      color: var(--ink); padding: 8px 12px; cursor: pointer; font: inherit; font-size: 13px;
+      text-decoration: none; display: inline-block;
+    }
+    button:hover, a.btn:hover { background: var(--accent); color: #1a1612; }
+    #hint { position: absolute; right: 20px; bottom: 18px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <h1>新玛钢 · 抽屉把手</h1>
+    <div class="sub">把室外水龙头改成单孔抽屉拉手：原来的螺纹进水端变成穿抽屉的 M8 螺杆，T 形手柄和下弯出水嘴是两处握持面。</div>
+    <dl>
+      <dt>安装孔</dt><dd>单孔 Φ8 mm（M8 通杆 + 内侧螺母）</dd>
+      <dt>突出尺寸</dt><dd>约 55 mm（抽屉面到阀体最前）</dd>
+      <dt>握持</dt><dd>上方 T 杆，或手指钩住下弯出水嘴</dd>
+      <dt>外观</dt><dd>玛钢铁铸阀体 + 黄铜阀杆</dd>
+    </dl>
+    <div class="btns">
+      <button type="button" id="reset">复位视角</button>
+      <button type="button" id="toggle">显示/隐藏柜体</button>
+      <a class="btn" href="../models/faucet-drawer-handle.stl" download>下载 STL</a>
+    </div>
+  </div>
+  <div id="hint">拖拽旋转 · 滚轮缩放 · 右键平移</div>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1612);
+    scene.fog = new THREE.Fog(0x1a1612, 1.8, 6.2);
+
+    const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.01, 40);
+    camera.position.set(0.55, 0.28, 0.42);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.08, 0.42);
+
+    scene.add(new THREE.HemisphereLight(0xfff1d6, 0x2a2118, 0.7));
+    const key = new THREE.DirectionalLight(0xffe6c2, 1.35);
+    key.position.set(0.8, 1.2, 0.6);
+    key.castShadow = true;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x88a0c8, 0.35);
+    fill.position.set(-0.8, 0.4, 0.2);
+    scene.add(fill);
+    const rim = new THREE.PointLight(0xc9a227, 0.55, 2.5);
+    rim.position.set(0.15, 0.25, 0.55);
+    scene.add(rim);
+
+    const iron = new THREE.MeshStandardMaterial({ color: 0x9aa3a8, metalness: 0.85, roughness: 0.42 });
+    const ironDark = new THREE.MeshStandardMaterial({ color: 0x7b8388, metalness: 0.88, roughness: 0.38 });
+    const brass = new THREE.MeshStandardMaterial({ color: 0xb08d3a, metalness: 1.0, roughness: 0.22 });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.82, metalness: 0.02 });
+    const woodDark = new THREE.MeshStandardMaterial({ color: 0x3a2616, roughness: 0.88, metalness: 0.02 });
+
+    function hexGeom(across, depth) {
+      const r = across / Math.sqrt(3);
+      const shape = new THREE.Shape();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 6 + i * Math.PI / 3;
+        const x = r * Math.cos(a);
+        const y = r * Math.sin(a);
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+      }
+      shape.closePath();
+      return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    }
+
+    function stampMaterial() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 256;
+      const g = c.getContext('2d');
+      g.fillStyle = '#8f979c';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#5c6368';
+      g.font = 'bold 72px serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('新玛钢', 256, 128);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return new THREE.MeshStandardMaterial({ map: tex, metalness: 0.82, roughness: 0.45 });
+    }
+
+    function mesh(geom, mat, pos, rot) {
+      const m = new THREE.Mesh(geom, mat);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      if (pos) m.position.set(pos[0], pos[1], pos[2]);
+      if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+      handle.add(m);
+      return m;
+    }
+
+    const handle = new THREE.Group();
+    handle.scale.setScalar(0.001);
+
+    mesh(hexGeom(13, 5.5), ironDark, [0, 0, -21.5]);
+    mesh(new THREE.CylinderGeometry(4, 4, 24, 28), ironDark, [0, 0, -4], [Math.PI / 2, 0, 0]);
+    mesh(hexGeom(24, 9), iron, [0, 0, 2]);
+    mesh(new THREE.CylinderGeometry(5.8, 5.8, 10, 28), iron, [0, 0, 15], [Math.PI / 2, 0, 0]);
+    for (let i = 0; i < 5; i++) {
+      mesh(new THREE.TorusGeometry(6.4, 0.45, 10, 24), ironDark, [0, 0, 11.2 + i * 1.55]);
+    }
+
+    mesh(new THREE.SphereGeometry(16.5, 32, 24), stampMaterial(), [0, 0, 28]);
+    mesh(new THREE.CylinderGeometry(13, 14.2, 28, 28), iron, [10, 0, 30], [0, 0, Math.PI / 2]);
+    mesh(new THREE.CylinderGeometry(13, 8.5, 16, 24), iron, [0, 0, 22], [Math.PI / 2, 0, 0]);
+
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(16, 0, 30),
+      new THREE.Vector3(38, -4, 32),
+      new THREE.Vector3(48, -28, 30)
+    );
+    mesh(new THREE.TubeGeometry(curve, 24, 7.2, 16, false), iron);
+    const lip = mesh(new THREE.CylinderGeometry(8.2, 7.2, 5, 20), iron);
+    const lipPos = curve.getPoint(1);
+    const lipDir = curve.getTangent(1).normalize();
+    lip.position.copy(lipPos);
+    lip.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), lipDir);
+
+    mesh(new THREE.CylinderGeometry(8.2, 7.5, 8, 24), brass, [0, 16, 29]);
+    mesh(new THREE.CylinderGeometry(4.2, 4.4, 22, 20), brass, [0, 30, 29]);
+    mesh(new THREE.SphereGeometry(7.2, 20, 16), iron, [0, 42, 29]);
+    mesh(new THREE.CylinderGeometry(4.6, 4.6, 52, 18), iron, [0, 42, 29], [0, 0, Math.PI / 2]);
+    mesh(new THREE.SphereGeometry(5, 14, 12), iron, [-26, 42, 29]);
+    mesh(new THREE.SphereGeometry(5, 14, 12), iron, [26, 42, 29]);
+
+    const handleRoot = new THREE.Group();
+    handleRoot.add(handle);
+    handleRoot.position.set(0, 0.09, 0.401);
+    scene.add(handleRoot);
+
+    const cabinet = new THREE.Group();
+    const drawer = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.16, 0.40), wood);
+    drawer.position.set(0, 0.09, 0.20);
+    drawer.castShadow = true;
+    drawer.receiveShadow = true;
+    cabinet.add(drawer);
+    const face = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.145, 0.012), wood);
+    face.position.set(0, 0.09, 0.394);
+    cabinet.add(face);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.72, 0.42), woodDark);
+    frame.position.set(0, 0.18, 0.18);
+    frame.receiveShadow = true;
+    cabinet.add(frame);
+    const opening = new THREE.Mesh(
+      new THREE.BoxGeometry(0.54, 0.18, 0.44),
+      new THREE.MeshBasicMaterial({ color: 0x1a1612 })
+    );
+    opening.position.set(0, 0.09, 0.20);
+    cabinet.add(opening);
+    scene.add(cabinet);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(4, 4),
+      new THREE.MeshStandardMaterial({ color: 0x241c16, roughness: 1 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.18;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const defaultCam = camera.position.clone();
+    const defaultTarget = controls.target.clone();
+    document.getElementById('reset').onclick = () => {
+      camera.position.copy(defaultCam);
+      controls.target.copy(defaultTarget);
+    };
+    document.getElementById('toggle').onclick = () => {
+      cabinet.visible = !cabinet.visible;
+    };
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    (function tick() {
+      requestAnimationFrame(tick);
+      handleRoot.rotation.y = Math.sin(performance.now() * 0.00025) * 0.08;
+      controls.update();
+      renderer.render(scene, camera);
+    })();
+  </script>
+</body>
+</html>
